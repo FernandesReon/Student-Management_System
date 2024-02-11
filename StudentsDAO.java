@@ -197,48 +197,76 @@ public class StudentsDAO {
     }
 
     // Delete
-    public static void deleteData() throws SQLException {
-
+    public static void deleteData() {
         try (Connection connection = Connectivity.connectDB();
                 Scanner scanner = new Scanner(System.in)) {
 
-            System.out.print("What you want to delete? (Single Row(SR), All Rows(AR), Table(T)): ");
-            String choice = scanner.nextLine().toLowerCase();
+            try {
+                System.out.print("What you want to delete? (Single Row(SR), All Rows(AR), Table(T)): ");
+                String choice = scanner.nextLine().toLowerCase();
 
-            if (choice.equals("sr")) {
-
-                System.out.print("Enter the row ID: ");
-                int id = scanner.nextInt();
-
-                // Use a PreparedStatement to prevent SQL injection
-                PreparedStatement statement = connection.prepareStatement(Query.removeRow);
-                statement.setInt(1, id); // Set the ID parameter
-
-                int rowsDeleted = statement.executeUpdate();
-
-                if (rowsDeleted > 0) {
-                    System.out.println("Row deleted successfully.");
+                if (choice.equals("sr")) {
+                    deleteSingleRow(connection, scanner);
+                } else if (choice.equals("ar")) {
+                    deleteMultipleRow(connection, scanner);
+                } else if (choice.equals("table")) {
+                    dropTable(connection, scanner);
                 } else {
-                    System.out.println("No row found with ID " + id);
+                    System.out.println("Invalid choice.");
                 }
-            } else if (choice.equals("ar")) {
-
-                System.out.println("WARNING: This will delete ALL rows from the table. Are you sure? (y/n)");
-                String confirmation = scanner.nextLine().toLowerCase();
-
-                if (confirmation.equals("y")) {
-
-                    PreparedStatement statement = connection.prepareStatement(Query.deleteAllRows);
-                    statement.executeUpdate();
-                    System.out.println("All rows deleted successfully.");
-
-                } else {
-
-                    System.out.println("Deletion cancelled.");
-                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
+    private static void deleteSingleRow(Connection connection, Scanner scanner) throws SQLException {
+        System.out.print("Enter the row ID: ");
+        int id = scanner.nextInt();
+
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.removeRow);
+        preparedStatement.setInt(1, id);
+
+        int rowsDeleted = preparedStatement.executeUpdate();
+
+        if (rowsDeleted > 0) {
+            System.out.println("Row deleted successfully.");
+        } else {
+            System.out.println("No row found with ID " + id);
+        }
+    }
+
+    private static void deleteMultipleRow(Connection connection, Scanner scanner) throws SQLException {
+        System.out.println("WARNING: This will delete ALL rows from the table. Are you sure? (y/n)");
+        String confirmation = scanner.nextLine().toLowerCase();
+
+        if (confirmation.equals("y")) {
+
+            PreparedStatement preparedStatement = connection.prepareStatement(Query.deleteAllRows);
+            preparedStatement.executeUpdate();
+            System.out.println("All rows deleted successfully.");
+
+        } else {
+
+            System.out.println("Deletion cancelled.");
+        }
+    }
+
+    private static void dropTable(Connection connection, Scanner scanner) throws SQLException {
+        System.out.println("WARNING: This will DROP the table. Are you sure? (y/n)");
+        String confirmation = scanner.nextLine().toLowerCase();
+
+        if (confirmation.equals("y")) {
+
+            PreparedStatement preparedStatement = connection.prepareStatement(Query.dropTable);
+            preparedStatement.executeUpdate();
+            System.out.println("Table dropped successfully.");
+
+        } else {
+
+            System.out.println("Table drop cancelled.");
+        }
+    }
 }
