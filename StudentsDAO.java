@@ -14,143 +14,186 @@ public class StudentsDAO {
         double marks;
 
         try (Connection connection = Connectivity.connectDB();
+                PreparedStatement preparedStatement = connection.prepareStatement(Query.insertData);
                 Scanner scanner = new Scanner(System.in)) {
 
-            PreparedStatement preparedStatement = connection.prepareStatement(Query.insertData);
+            try {
+                connection.setAutoCommit(false); // Disable auto-commit
 
-            while (true) {
-                System.out.print("Enter name: ");
-                name = scanner.nextLine();
-                students.setName(name);
+                while (true) {
 
-                System.out.print("Enter age: ");
-                age = scanner.nextInt();
-                students.setAge(age);
-                scanner.nextLine(); // Consume the newline character
+                    System.out.print("Enter name: ");
+                    name = scanner.nextLine();
+                    students.setName(name);
 
-                System.out.print("Enter address: ");
-                address = scanner.nextLine();
-                students.setAddress(address);
+                    System.out.print("Enter age: ");
+                    age = scanner.nextInt();
+                    students.setAge(age);
+                    scanner.nextLine(); // Consume the newline character
 
-                System.out.print("Enter marks: ");
-                marks = scanner.nextDouble();
-                students.setMarks(marks);
+                    System.out.print("Enter address: ");
+                    address = scanner.nextLine();
+                    students.setAddress(address);
 
-                preparedStatement.setString(1, name);
-                preparedStatement.setInt(2, age);
-                preparedStatement.setString(3, address);
-                preparedStatement.setDouble(4, marks);
+                    System.out.print("Enter marks: ");
+                    marks = scanner.nextDouble();
+                    students.setMarks(marks);
 
-                System.out.print("Do you want to enter more data: (Y/N)");
-                scanner.nextLine(); // Consume the newline character
-                String choice = scanner.nextLine().toUpperCase();
+                    preparedStatement.setString(1, name);
+                    preparedStatement.setInt(2, age);
+                    preparedStatement.setString(3, address);
+                    preparedStatement.setDouble(4, marks);
 
-                if (choice.equals("N")) {
-                    System.out.println("Okay");
-                    break;
+                    int rowsAffected = preparedStatement.executeUpdate();
+                    if (rowsAffected > 0) {
+                        System.out.println("Data inserted successfully..");
+                    } else {
+                        System.out.println("Error...");
+                    }
+
+                    System.out.print("Do you want to enter more data: (Y/N)");
+                    scanner.nextLine(); // Consume the newline character
+                    String choice = scanner.nextLine().toUpperCase();
+
+                    if (choice.equals("N")) {
+                        System.out.println("Okay");
+                        break;
+                    }
                 }
+
+                connection.commit(); // Commit changes if all insertions were successful
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+                connection.rollback(); // Rollback changes in case of errors
+                throw e; // Rethrow to propagate the exception
             }
-
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected > 0)
-                System.out.println("Data inserted successfully..");
-            else
-                System.out.println("Error...");
-
-            preparedStatement.close();
         }
     }
 
     // Read
     public static void printData() throws SQLException {
 
-        Connection connection = Connectivity.connectDB();
-        Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery(Query.readData);
+        try (Connection connection = Connectivity.connectDB();
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(Query.readData)) {
 
-        while (resultSet.next()) {
-            String name = resultSet.getString("name");
-            int age = resultSet.getInt("age");
-            String address = resultSet.getString("address");
-            double marks = resultSet.getDouble("marks");
+            try {
+                while (resultSet.next()) {
+                    String name = resultSet.getString("name");
+                    int age = resultSet.getInt("age");
+                    String address = resultSet.getString("address");
+                    double marks = resultSet.getDouble("marks");
 
-            System.out.println("Name:" + name + "\nAge: " + age + "\nAddress: " + address + "\nMarks: " + marks);
-            System.out.println("------------------------------------");
+                    System.out
+                            .println("Name:" + name + "\nAge: " + age + "\nAddress: " + address + "\nMarks: " + marks);
+                    System.out.println("------------------------------------");
+                }
+                resultSet.close();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            } finally {
+                try {
+                    statement.close();
+                    connection.close();
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            }
         }
     }
 
     // Update
-    public static void updateData() throws SQLException {
-
+    public static void updateData() {
         try (Connection connection = Connectivity.connectDB();
                 Scanner scanner = new Scanner(System.in)) {
 
-            System.out.print("What would like to update (Name, Age, Address, Marks): ");
-            String choice = scanner.nextLine().toLowerCase();
+            try {
+                System.out.print("What would you like to update (Name, Age, Address, Marks): ");
+                String choice = scanner.nextLine().toLowerCase();
 
-            if (choice.equals("name")) {
-                PreparedStatement preparedStatement = connection.prepareStatement(Query.updateName);
-
-                System.out.print("Id: ");
-                int id = scanner.nextInt();
-                scanner.nextLine(); // Consume the newline
-
-                System.out.print("Name: ");
-                String name = scanner.nextLine();
-
-                preparedStatement.setString(1, name); // Set the first placeholder (name)
-                preparedStatement.setInt(2, id); // Set the second placeholder (id)
-
-                int rowsAffected = preparedStatement.executeUpdate();
-                System.out.println(rowsAffected + " row was updated..");
-
-            } else if (choice.equals("age")) {
-                PreparedStatement preparedStatement = connection.prepareStatement(Query.updateAge);
-
-                System.out.print("Id: ");
-                int id = scanner.nextInt();
-
-                System.out.print("Age: ");
-                int age = scanner.nextInt();
-
-                preparedStatement.setInt(1, age); // Set the first placeholder (age)
-                preparedStatement.setInt(2, id); // Set the second placeholder (id)
-
-                int rowsAffected = preparedStatement.executeUpdate();
-                System.out.println(rowsAffected + " row was updated..");
-
-            } else if (choice.equals("address")) {
-                PreparedStatement preparedStatement = connection.prepareStatement(Query.updateAddress);
-
-                System.out.print("Id: ");
-                int id = scanner.nextInt();
-                scanner.nextLine(); // Consume the newline
-
-                System.out.print("Address: ");
-                String address = scanner.nextLine();
-
-                preparedStatement.setString(1, address); // Set the first placeholder (address)
-                preparedStatement.setInt(2, id); // Set the second placeholder (id)
-
-                int rowsAffected = preparedStatement.executeUpdate();
-                System.out.println(rowsAffected + " row was updated..");
-
-            } else if (choice.equals("marks")) {
-                PreparedStatement preparedStatement = connection.prepareStatement(Query.updateMarks);
-
-                System.out.print("Id: ");
-                int id = scanner.nextInt();
-
-                System.out.print("Marks: ");
-                double marks = scanner.nextDouble();
-
-                preparedStatement.setDouble(1, marks); // Set the first placeholder (marks)
-                preparedStatement.setInt(2, id); // Set the second placeholder (id)
-
-                int rowsAffected = preparedStatement.executeUpdate();
-                System.out.println(rowsAffected + " row was updated..");
+                if (choice.equals("name")) {
+                    updateName(connection, scanner);
+                } else if (choice.equals("age")) {
+                    updateAge(connection, scanner);
+                } else if (choice.equals("address")) {
+                    updateAddress(connection, scanner);
+                } else if (choice.equals("marks")) {
+                    updateMarks(connection, scanner);
+                } else {
+                    System.out.println("Invalid choice.");
+                }
+            } catch (SQLException e) {
+                System.out.println("Error: " + e.getMessage());
             }
-        } // Resources (connection, scanner) will be closed automatically here
+        } catch (SQLException e) {
+            System.out.println("Error connecting to database: " + e.getMessage());
+        }
+    }
+
+    private static void updateName(Connection connection, Scanner scanner) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.updateName);
+
+        System.out.print("Id: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Consume the newline
+
+        System.out.print("Name: ");
+        String name = scanner.nextLine();
+
+        preparedStatement.setString(1, name); // Set the first placeholder (name)
+        preparedStatement.setInt(2, id); // Set the second placeholder (id)
+
+        int rowsAffected = preparedStatement.executeUpdate();
+        System.out.println(rowsAffected + " row was updated.");
+    }
+
+    private static void updateAge(Connection connection, Scanner scanner) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.updateAge);
+
+        System.out.print("Id: ");
+        int id = scanner.nextInt();
+
+        System.out.print("Age: ");
+        int age = scanner.nextInt();
+
+        preparedStatement.setInt(1, age); // Set the first placeholder (age)
+        preparedStatement.setInt(2, id); // Set the second placeholder (id)
+
+        int rowsAffected = preparedStatement.executeUpdate();
+        System.out.println(rowsAffected + " row was updated.");
+    }
+
+    private static void updateAddress(Connection connection, Scanner scanner) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.updateAddress);
+
+        System.out.print("Id: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Consume the newline
+
+        System.out.print("Address: ");
+        String address = scanner.nextLine();
+
+        preparedStatement.setString(1, address); // Set the first placeholder (address)
+        preparedStatement.setInt(2, id); // Set the second placeholder (id)
+
+        int rowsAffected = preparedStatement.executeUpdate();
+        System.out.println(rowsAffected + " row was updated.");
+    }
+
+    private static void updateMarks(Connection connection, Scanner scanner) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(Query.updateMarks);
+
+        System.out.print("Id: ");
+        int id = scanner.nextInt();
+
+        System.out.print("Marks: ");
+        double marks = scanner.nextDouble();
+
+        preparedStatement.setDouble(1, marks); // Set the first placeholder (marks)
+        preparedStatement.setInt(2, id); // Set the second placeholder (id)
+
+        int rowsAffected = preparedStatement.executeUpdate();
+        System.out.println(rowsAffected + " row was updated.");
     }
 
     // Delete
